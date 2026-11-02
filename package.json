@@ -2,7 +2,7 @@
   "name": "margin",
   "version": "0.1.0",
   "private": true,
-    "engines": {
+  "engines": {
     "node": ">=20.9.0"
   },
   "scripts": {
@@ -30,6 +30,8 @@
     "@types/react-dom": "^19",
     "@types/uuid": "^10.0.0",
     "@types/ws": "^8.18.2",
+    "dotenv": "^18.0.9",
+    "drizzle-kit": "^0.31.11",
     "eslint": "^9",
     "eslint-config-next": "16.4.4",
     "fake-indexeddb": "^6.2.7",
