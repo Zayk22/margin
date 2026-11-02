@@ -10,7 +10,6 @@ export async function saveExpense(db: MarginDatabase, expense: Expense): Promise
 }
 
 export async function deleteExpense(db: MarginDatabase, expense: Expense): Promise<void> {
-  // Soft delete (tombstone)
   const tombstone: Expense = {
     ...expense,
     deletedAt: new Date().toISOString(),
@@ -20,6 +19,19 @@ export async function deleteExpense(db: MarginDatabase, expense: Expense): Promi
   await db.transaction("rw", db.expenses, db.outbox, async () => {
     await db.expenses.put(tombstone);
     await appendToOutbox(db, "Expense", tombstone.id, "delete", JSON.stringify(tombstone));
+  });
+}
+
+export async function undoDeleteExpense(db: MarginDatabase, expense: Expense): Promise<void> {
+  const restored: Expense = {
+    ...expense,
+    deletedAt: null,
+    updatedAt: new Date().toISOString(),
+  };
+
+  await db.transaction("rw", db.expenses, db.outbox, async () => {
+    await db.expenses.put(restored);
+    await appendToOutbox(db, "Expense", restored.id, "upsert", JSON.stringify(restored));
   });
 }
 

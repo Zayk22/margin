@@ -61,9 +61,8 @@ export function AddExpenseSheet({ isOpen, onClose }: { isOpen: boolean; onClose:
         deviceId: "browser",
       });
 
-      if (getToken) {
-        triggerDebouncedSync({ userId, getToken });
-      }
+      // Just call getToken directly, no if check needed.
+      triggerDebouncedSync({ userId, getToken });
 
       onClose();
     } catch (err) {
@@ -76,13 +75,11 @@ export function AddExpenseSheet({ isOpen, onClose }: { isOpen: boolean; onClose:
   return (
     <div className="fixed inset-0 z-[60] flex items-end justify-center bg-black/50 md:items-center">
       <div className="flex w-full max-w-md flex-col rounded-t-card bg-surface p-4 shadow-xl md:rounded-card">
-        {/* Header */}
         <div className="mb-4 flex items-center justify-between">
           <h2 className="font-heading text-lg font-bold">Add Expense</h2>
           <button onClick={onClose} className="rounded-full p-2 hover:bg-surface-raised"><X size={20} /></button>
         </div>
 
-        {/* Amount Display */}
         <div className="mb-4 text-center">
           <span className="font-heading text-4xl font-bold tabular-nums text-text">
             {amount ? formatKobo(parseKobo(amount)) : "₦0.00"}
@@ -101,7 +98,6 @@ export function AddExpenseSheet({ isOpen, onClose }: { isOpen: boolean; onClose:
           />
         </div>
 
-        {/* Category Chips */}
         <div className="mb-4 flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
           {DEFAULT_CATEGORIES.map((cat) => (
             <button
@@ -119,7 +115,6 @@ export function AddExpenseSheet({ isOpen, onClose }: { isOpen: boolean; onClose:
           ))}
         </div>
 
-        {/* Details */}
         <div className="mb-4 flex gap-2">
           <input
             type="text"
@@ -136,7 +131,6 @@ export function AddExpenseSheet({ isOpen, onClose }: { isOpen: boolean; onClose:
           />
         </div>
 
-        {/* Keypad */}
         <div className="mb-4 grid grid-cols-3 gap-2">
           {[1, 2, 3, 4, 5, 6, 7, 8, 9, "00", 0, "backspace"].map((key) => (
             <button
@@ -149,7 +143,6 @@ export function AddExpenseSheet({ isOpen, onClose }: { isOpen: boolean; onClose:
           ))}
         </div>
 
-        {/* Save Button */}
         <button
           onClick={handleSave}
           disabled={!amount || isSaving}

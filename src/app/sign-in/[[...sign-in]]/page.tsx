@@ -6,12 +6,10 @@ export default function SignInPage() {
       <SignIn 
         appearance={{
           variables: {
-            colorPrimary: "var(--color-accent)",
-            colorBackground: "var(--color-surface)",
-            colorText: "var(--color-text)",
-            colorInputBackground: "var(--color-surface-raised)",
-            colorInputText: "var(--color-text)",
+            colorPrimary: "var(--primary)",
+            colorBackground: "var(--surface)",
             borderRadius: "12px",
+            fontFamily: "var(--font-dm-sans), sans-serif",
           }
         }} 
       />
