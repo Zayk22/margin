@@ -66,6 +66,10 @@ describe("Dexie Local Database", () => {
 
     const outboxOps = await db.outbox.toArray();
     expect(outboxOps).toHaveLength(2);
-    expect(outboxOps[1].type).toBe("delete");
+    
+    // Find the delete operation specifically (since UUIDs are not strictly ordered)
+    const deleteOp = outboxOps.find((op) => op.type === "delete");
+    expect(deleteOp).toBeDefined();
+    expect(deleteOp?.entityId).toBe("exp-2");
   });
 });
