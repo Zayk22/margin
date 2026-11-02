@@ -1,4 +1,12 @@
-export type SyncStatus = "Synced" | "Offline" | "Syncing" | `${number} changes waiting`;
+export type SyncStatus = "Synced" | "Offline" | "Syncing" | "Sign in to sync" | `${number} changes waiting`;
+
+export function deriveStatus(pendingCount: number, isSyncing: boolean, isOffline: boolean, isPaused: boolean): SyncStatus {
+  if (isPaused) return "Sign in to sync";
+  if (isOffline) return "Offline";
+  if (isSyncing) return "Syncing";
+  if (pendingCount > 0) return `${pendingCount} changes waiting`;
+  return "Synced";
+}
 
 let currentStatus: SyncStatus = "Offline";
 const listeners = new Set<() => void>();

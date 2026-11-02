@@ -1,76 +1,121 @@
 @import "tailwindcss";
 
-@theme {
-  --font-heading: var(--font-bricolage);
-  --font-body: var(--font-dm-sans);
-}
-
+/* Raw tokens: dark is the default */
 :root {
-  --color-bg: #0f1110;
-  --color-surface: #171a18;
-  --color-surface-raised: #1e2220;
-  --color-border: rgba(255, 255, 255, 0.08);
-  --color-text: #f2f1ed;
-  --color-text-muted: rgba(242, 241, 237, 0.62);
-  --color-accent: #4cc9a0;
-  --color-accent-strong: #4cc9a0;
-  --color-accent-text: #06130e;
-  --color-warn: #f2b544;
-  --color-warn-strong: #f2b544;
-  --color-danger: #f0705a;
+  --bg: #0f1110;
+  --surface: #171a18;
+  --surface-raised: #1e2220;
+  --border: rgba(255, 255, 255, 0.08);
+  --text: #f2f1ed;
+  --text-muted: rgba(242, 241, 237, 0.62);
+  
+  --primary: #f2f1ed;
+  --primary-text: #0f1110;
+  --primary-hover: #e0dfd9;
+  
+  --success: #4cc9a0;
+  --success-strong: #4cc9a0;
+  --warn: #f2b544;
+  --warn-strong: #f2b544;
+  --danger: #f0705a;
+  
   color-scheme: dark;
 }
 
 [data-theme="light"] {
-  --color-bg: #f6f5f1;
-  --color-surface: #ffffff;
-  --color-surface-raised: #fbfaf7;
-  --color-border: rgba(21, 23, 21, 0.1);
-  --color-text: #151715;
-  --color-text-muted: rgba(21, 23, 21, 0.62);
-  --color-accent: #1e9e78;
-  --color-accent-strong: #16795c;
-  --color-accent-text: #06130e;
-  --color-warn: #b7791f;
-  --color-warn-strong: #8a5a00;
-  --color-danger: #c2412d;
+  --bg: #f6f5f1;
+  --surface: #ffffff;
+  --surface-raised: #fbfaf7;
+  --border: rgba(21, 23, 21, 0.1);
+  --text: #151715;
+  --text-muted: rgba(21, 23, 21, 0.62);
+  
+  --primary: #151715;
+  --primary-text: #f6f5f1;
+  --primary-hover: #2c302c;
+  
+  --success: #1e9e78;
+  --success-strong: #16795c;
+  --warn: #b7791f;
+  --warn-strong: #8a5a00;
+  --danger: #c2412d;
+  
   color-scheme: light;
+}
+
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) {
+    --bg: #f6f5f1;
+    --surface: #ffffff;
+    --surface-raised: #fbfaf7;
+    --border: rgba(21, 23, 21, 0.1);
+    --text: #151715;
+    --text-muted: rgba(21, 23, 21, 0.62);
+    
+    --primary: #151715;
+    --primary-text: #f6f5f1;
+    --primary-hover: #2c302c;
+    
+    --success: #1e9e78;
+    --success-strong: #16795c;
+    --warn: #b7791f;
+    --warn-strong: #8a5a00;
+    --danger: #c2412d;
+    
+    color-scheme: light;
+  }
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-raised: var(--surface-raised);
+  --color-border: var(--border);
+  --color-text: var(--text);
+  --color-text-muted: var(--text-muted);
+  
+  --color-primary: var(--primary);
+  --color-primary-text: var(--primary-text);
+  --color-primary-hover: var(--primary-hover);
+  
+  --color-success: var(--success);
+  --color-success-strong: var(--success-strong);
+  --color-warn: var(--warn);
+  --color-warn-strong: var(--warn-strong);
+  --color-danger: var(--danger);
+  
+  --font-sans: var(--font-dm-sans);
+  --font-heading: var(--font-bricolage);
+  --radius-card: 16px;
+  --radius-control: 12px;
+  --radius-pill: 9999px;
 }
 
 @layer base {
   html {
-    background-color: var(--color-bg);
-    color: var(--color-text);
+    background-color: var(--bg);
+    color: var(--text);
   }
 
   body {
-    font-family: var(--font-body), ui-sans-serif, system-ui, sans-serif;
-    background-color: var(--color-bg);
-    color: var(--color-text);
+    font-family: var(--font-dm-sans), ui-sans-serif, system-ui, sans-serif;
+    background-color: var(--bg);
+    color: var(--text);
     -webkit-font-smoothing: antialiased;
     text-rendering: optimizeLegibility;
   }
 
-  h1,
-  h2,
-  h3,
-  h4,
-  h5,
-  h6 {
-    font-family: var(--font-heading), ui-sans-serif, system-ui, sans-serif;
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-bricolage), ui-sans-serif, system-ui, sans-serif;
   }
 
   ::selection {
-    background-color: var(--color-accent);
-    color: var(--color-accent-text);
+    background-color: var(--primary);
+    color: var(--primary-text);
   }
 
   :focus-visible {
-    outline: 2px solid var(--color-accent);
+    outline: 2px solid var(--text);
     outline-offset: 2px;
-  }
-
-  .tabular-nums {
-    font-variant-numeric: tabular-nums;
   }
 }

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Bricolage_Grotesque, DM_Sans } from "next/font/google";
+import { Providers } from "./providers";
 import "./globals.css";
 
 const bricolage = Bricolage_Grotesque({
@@ -22,16 +23,19 @@ export const metadata: Metadata = {
 const themeScript = `
 (function () {
   try {
-    var stored = localStorage.getItem("margin-theme");
-    var theme = stored === "light" || stored === "dark" ? stored : "system";
-    var resolved =
-      theme === "system"
-        ? window.matchMedia("(prefers-color-scheme: dark)").matches
-          ? "dark"
-          : "light"
-        : theme;
-    document.documentElement.dataset.theme = resolved;
-    document.documentElement.style.colorScheme = resolved;
+    var key = "margin-theme";
+    var stored = localStorage.getItem(key);
+    var choice = stored === "light" || stored === "dark" ? stored : "system";
+    var mq = window.matchMedia("(prefers-color-scheme: dark)");
+    function apply() {
+      var resolved = choice === "system" ? (mq.matches ? "dark" : "light") : choice;
+      document.documentElement.dataset.theme = resolved;
+      document.documentElement.style.colorScheme = resolved;
+    }
+    apply();
+    if (choice === "system") {
+      mq.addEventListener("change", apply);
+    }
   } catch (e) {}
 })();
 `;
@@ -42,12 +46,16 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html
+      lang="en"
+      suppressHydrationWarning
+      className={`${bricolage.variable} ${dmSans.variable}`}
+    >
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
       </head>
-      <body className={`${bricolage.variable} ${dmSans.variable}`}>
-        {children}
+      <body>
+        <Providers>{children}</Providers>
       </body>
     </html>
   );
