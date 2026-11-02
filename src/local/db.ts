@@ -1,18 +1,22 @@
 import Dexie, { type Table } from "dexie";
 import { Expense, Category, Budget, RecurringRule, OutboxOp } from "../lib/types";
 
+export type SyncMeta = {
+  key: string; // always "cursor"
+  value: number;
+};
+
 export class MarginDatabase extends Dexie {
   expenses!: Table<Expense, string>;
   categories!: Table<Category, string>;
   budgets!: Table<Budget, string>;
   recurringRules!: Table<RecurringRule, string>;
   outbox!: Table<OutboxOp, string>;
+  syncMeta!: Table<SyncMeta, string>;
 
   constructor(userId: string) {
     super(`margin-${userId}`);
     
-    // Schema definition. The first string is the primary key.
-    // Subsequent strings are indexes.
     this.version(1).stores({
       expenses: "id, occurredOn, categoryId, updatedAt",
       categories: "id, updatedAt",
@@ -20,15 +24,16 @@ export class MarginDatabase extends Dexie {
       recurringRules: "id, updatedAt",
       outbox: "opId, createdAt",
     });
+
+    // Version 2: Add syncMeta for storing the pull cursor
+    this.version(2).stores({
+      syncMeta: "key",
+    });
   }
 }
 
 let activeDb: MarginDatabase | null = null;
 
-/**
- * Returns the Dexie database instance for the given user.
- * If the active instance belongs to a different user, it closes the old one and creates a new one.
- */
 export function getDb(userId: string): MarginDatabase {
   if (!activeDb || activeDb.name !== `margin-${userId}`) {
     if (activeDb) {
