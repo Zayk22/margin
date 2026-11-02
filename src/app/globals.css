@@ -1,26 +1,76 @@
 @import "tailwindcss";
 
+@theme {
+  --font-heading: var(--font-bricolage);
+  --font-body: var(--font-dm-sans);
+}
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --color-bg: #0f1110;
+  --color-surface: #171a18;
+  --color-surface-raised: #1e2220;
+  --color-border: rgba(255, 255, 255, 0.08);
+  --color-text: #f2f1ed;
+  --color-text-muted: rgba(242, 241, 237, 0.62);
+  --color-accent: #4cc9a0;
+  --color-accent-strong: #4cc9a0;
+  --color-accent-text: #06130e;
+  --color-warn: #f2b544;
+  --color-warn-strong: #f2b544;
+  --color-danger: #f0705a;
+  color-scheme: dark;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+[data-theme="light"] {
+  --color-bg: #f6f5f1;
+  --color-surface: #ffffff;
+  --color-surface-raised: #fbfaf7;
+  --color-border: rgba(21, 23, 21, 0.1);
+  --color-text: #151715;
+  --color-text-muted: rgba(21, 23, 21, 0.62);
+  --color-accent: #1e9e78;
+  --color-accent-strong: #16795c;
+  --color-accent-text: #06130e;
+  --color-warn: #b7791f;
+  --color-warn-strong: #8a5a00;
+  --color-danger: #c2412d;
+  color-scheme: light;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+@layer base {
+  html {
+    background-color: var(--color-bg);
+    color: var(--color-text);
   }
-}
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  body {
+    font-family: var(--font-body), ui-sans-serif, system-ui, sans-serif;
+    background-color: var(--color-bg);
+    color: var(--color-text);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    font-family: var(--font-heading), ui-sans-serif, system-ui, sans-serif;
+  }
+
+  ::selection {
+    background-color: var(--color-accent);
+    color: var(--color-accent-text);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 2px;
+  }
+
+  .tabular-nums {
+    font-variant-numeric: tabular-nums;
+  }
 }
