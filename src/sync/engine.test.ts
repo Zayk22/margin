@@ -62,7 +62,7 @@ describe("Sync Engine", () => {
   });
 
   it("pauses on 401 without retrying", async () => {
-    const mockFetch = vi.fn().mockResolvedValue({ status: 401 });
+    const mockFetch = vi.fn().mockResolvedValue({ status: 401, ok: false });
     vi.stubGlobal("fetch", mockFetch);
 
     const config = {
@@ -91,7 +91,7 @@ describe("Sync Engine", () => {
   });
 
   it("retries on 500 with backoff and eventually fails to Offline", async () => {
-    const mockFetch = vi.fn().mockResolvedValue({ status: 500 });
+    const mockFetch = vi.fn().mockResolvedValue({ status: 500, ok: false });
     vi.stubGlobal("fetch", mockFetch);
 
     const config = {
@@ -105,5 +105,33 @@ describe("Sync Engine", () => {
 
     expect(mockFetch).toHaveBeenCalledTimes(5);
     expect(syncStatusStore.getStatus()).toBe("1 change waiting");
+  });
+
+  it("deletes both accepted and rejected ops from the outbox", async () => {
+    const mockFetch = vi.fn().mockImplementation((url, options) => {
+      if (options?.method === "POST") {
+        return Promise.resolve({
+          status: 200,
+          ok: true,
+          json: async () => ({ accepted: ["op-1"], rejected: ["op-2"] }),
+        });
+      }
+      return Promise.resolve({
+        status: 200,
+        ok: true,
+        json: async () => ({ changes: [], cursor: 0, hasMore: false }),
+      });
+    });
+    vi.stubGlobal("fetch", mockFetch);
+
+    const config = {
+      userId: "test-user-reject",
+      getToken: async () => "valid-token",
+    };
+
+    await runSync(config);
+
+    const dbMock = (await import("../local/db")).getDb("test-user-reject");
+    expect(dbMock.outbox.bulkDelete).toHaveBeenCalledWith(["op-1", "op-2"]);
   });
 });

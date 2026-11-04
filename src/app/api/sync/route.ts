@@ -9,9 +9,6 @@ export async function POST(req: Request) {
   try {
     const { userId } = await auth();
     if (!userId) {
-      const hasAuthHeader = req.headers.has("authorization");
-      const hasSessionCookie = req.headers.has("cookie") && req.headers.get("cookie")?.includes("__session");
-      console.log(`TEMP: 401 on POST. AuthHeader: ${hasAuthHeader}, SessionCookie: ${hasSessionCookie}`);
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -24,11 +21,11 @@ export async function POST(req: Request) {
 
     const ops: OutboxOp[] = body.ops;
     if (!Array.isArray(ops) || ops.length === 0) {
-      return NextResponse.json({ accepted: [] });
+      return NextResponse.json({ accepted: [], rejected: [] });
     }
 
-    const accepted = await pushSync(userId, ops);
-    return NextResponse.json({ accepted });
+    const result = await pushSync(userId, ops);
+    return NextResponse.json(result);
   } catch (error) {
     console.error("Sync push error:", error);
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
@@ -39,9 +36,6 @@ export async function GET(req: Request) {
   try {
     const { userId } = await auth();
     if (!userId) {
-      const hasAuthHeader = req.headers.has("authorization");
-      const hasSessionCookie = req.headers.has("cookie") && req.headers.get("cookie")?.includes("__session");
-      console.log(`TEMP: 401 on GET. AuthHeader: ${hasAuthHeader}, SessionCookie: ${hasSessionCookie}`);
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 

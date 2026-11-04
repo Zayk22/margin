@@ -63,8 +63,13 @@ async function pushOutbox(db: ReturnType<typeof getDb>): Promise<void> {
   }
   if (!res.ok) throw new Error(`Push failed: ${res.status}`);
 
-  const { accepted } = (await res.json()) as { accepted: string[] };
-  await db.outbox.bulkDelete(accepted);
+  const { accepted, rejected } = (await res.json()) as { accepted: string[], rejected: string[] };
+  
+  // Delete both accepted and rejected ops so they don't get stuck in the queue
+  const toDelete = [...accepted, ...(rejected || [])];
+  if (toDelete.length > 0) {
+    await db.outbox.bulkDelete(toDelete);
+  }
 }
 
 async function pullChanges(db: ReturnType<typeof getDb>): Promise<void> {

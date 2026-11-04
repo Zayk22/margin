@@ -1,4 +1,4 @@
-import { pgTable, text, integer, timestamp, boolean, bigint, index, primaryKey } from "drizzle-orm/pg-core";
+import { pgTable, text, integer, timestamp, boolean, bigint, index } from "drizzle-orm/pg-core";
 
 export const syncCounters = pgTable("sync_counters", {
   userId: text("user_id").primaryKey(),
@@ -22,7 +22,7 @@ export const expenses = pgTable(
   {
     id: text("id").primaryKey(),
     userId: text("user_id").notNull(),
-    amountKobo: integer("amount_kobo").notNull(),
+    amountKobo: bigint("amount_kobo", { mode: "number" }).notNull(),
     categoryId: text("category_id").notNull(),
     note: text("note").notNull(),
     occurredOn: text("occurred_on").notNull(),
@@ -64,7 +64,7 @@ export const budgets = pgTable(
     userId: text("user_id").notNull(),
     categoryId: text("category_id").notNull(),
     month: text("month").notNull(),
-    amountKobo: integer("amount_kobo").notNull(),
+    amountKobo: bigint("amount_kobo", { mode: "number" }).notNull(),
     createdAt: text("created_at").notNull(),
     updatedAt: text("updated_at").notNull(),
     deletedAt: text("deleted_at"),
@@ -82,9 +82,9 @@ export const recurringRules = pgTable(
     id: text("id").primaryKey(),
     userId: text("user_id").notNull(),
     categoryId: text("category_id").notNull(),
-    amountKobo: integer("amount_kobo").notNull(),
+    amountKobo: bigint("amount_kobo", { mode: "number" }).notNull(),
     note: text("note").notNull(),
-    frequency: text("frequency").notNull(), // "weekly" | "monthly"
+    frequency: text("frequency").notNull(),
     startOn: text("start_on").notNull(),
     endOn: text("end_on"),
     lastGeneratedOn: text("last_generated_on"),
