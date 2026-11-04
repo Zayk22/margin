@@ -4,7 +4,7 @@ import { ClerkProvider, useAuth } from "@clerk/nextjs";
 import { useEffect } from "react";
 import { initializeSyncTriggers } from "@/sync/triggers";
 import { getDb } from "@/local/db";
-import { DEFAULT_CATEGORIES } from "@/lib/categories";
+import { seedDefaultCategories } from "@/local/seed";
 
 function SyncInitializer() {
   const { userId, getToken, isSignedIn, isLoaded } = useAuth();
@@ -14,21 +14,10 @@ function SyncInitializer() {
 
     localStorage.setItem("margin-last-user-id", userId);
 
-    // Seed default categories if the database is empty
     const db = getDb(userId);
-    db.categories.count().then(async (count) => {
-      if (count === 0) {
-        const now = new Date().toISOString();
-        const seeded = DEFAULT_CATEGORIES.map((c) => ({
-          ...c,
-          createdAt: now,
-          updatedAt: now,
-          deletedAt: null,
-          deviceId: "browser",
-        }));
-        await db.categories.bulkAdd(seeded);
-      }
-    });
+    
+    // Seed runs asynchronously and catches its own errors
+    seedDefaultCategories(db);
 
     const config = {
       userId,

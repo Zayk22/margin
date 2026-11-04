@@ -1,25 +1,23 @@
-import { runSync, SyncConfig } from "./engine";
+import { runSync, SyncConfig, resumeSync } from "./engine";
 
 let syncTimeout: NodeJS.Timeout | null = null;
 
-/**
- * Debounced sync trigger for after local writes.
- */
 export function triggerDebouncedSync(config: SyncConfig, delayMs = 2000): void {
   if (syncTimeout) clearTimeout(syncTimeout);
   syncTimeout = setTimeout(() => {
+    resumeSync();
     runSync(config);
   }, delayMs);
 }
 
-/**
- * Initializes all the event listeners for sync.
- * Call this once on app mount.
- */
 export function initializeSyncTriggers(config: SyncConfig): () => void {
-  const onOnline = () => runSync(config);
+  const onOnline = () => {
+    resumeSync();
+    runSync(config);
+  };
   const onVisibilityChange = () => {
     if (document.visibilityState === "visible") {
+      resumeSync();
       runSync(config);
     }
   };
@@ -27,7 +25,7 @@ export function initializeSyncTriggers(config: SyncConfig): () => void {
   window.addEventListener("online", onOnline);
   document.addEventListener("visibilitychange", onVisibilityChange);
 
-  // Initial sync on startup
+  resumeSync();
   runSync(config);
 
   return () => {

@@ -1,11 +1,12 @@
 "use client";
 
-import { useAuth } from "@clerk/nextjs";
 import { useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
 import { Home, List, PieChart, Settings, Plus } from "lucide-react";
-import { useSyncExternalStore, useEffect } from "react";
+import { useSyncExternalStore, useEffect, useState } from "react";
 import { syncStatusStore } from "@/sync/status";
+import { useActiveUser } from "@/hooks/useActiveUser";
+import { AddExpenseSheet } from "@/components/add-expense/AddExpenseSheet";
 
 function SyncPill() {
   const status = useSyncExternalStore(
@@ -33,24 +34,32 @@ function SyncPill() {
 }
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
-  const { isLoaded, userId } = useAuth();
+  const { userId, mode } = useActiveUser();
   const router = useRouter();
   const pathname = usePathname();
-
-  let activeUserId = userId;
-  if (!activeUserId && typeof window !== "undefined") {
-    activeUserId = localStorage.getItem("margin-last-user-id");
-  }
+  const [isSheetOpen, setIsSheetOpen] = useState(false);
 
   useEffect(() => {
-    if (isLoaded && !activeUserId) {
+    const handleOpen = () => setIsSheetOpen(true);
+    window.addEventListener("open-add-sheet", handleOpen);
+    return () => window.removeEventListener("open-add-sheet", handleOpen);
+  }, []);
+
+  useEffect(() => {
+    if (mode === "unauthenticated") {
       router.push("/sign-in");
     }
-  }, [isLoaded, activeUserId, router]);
+  }, [mode, router]);
 
-  if (!isLoaded || !activeUserId) {
-    return <div className="flex min-h-screen items-center justify-center p-4 text-sm text-text-muted">Loading...</div>;
+  if (mode === "loading") {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-bg p-4">
+        <div className="h-6 w-32 animate-pulse rounded-pill bg-surface-raised"></div>
+      </div>
+    );
   }
+
+  if (!userId) return null;
 
   const navItems = [
     { name: "Overview", href: "/", icon: Home },
@@ -61,13 +70,12 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="flex min-h-screen flex-col md:flex-row bg-bg">
-      {/* Desktop Sidebar */}
       <aside className="hidden w-64 flex-col border-r border-border bg-surface p-4 md:flex">
         <div className="mb-8 flex items-center justify-between">
-          <h1 className="font-heading text-xl font-bold">Margin</h1>
+          <span className="font-heading text-xl font-bold">Margin</span>
           <SyncPill />
         </div>
-        <nav className="flex flex-col gap-1">
+        <nav className="flex flex-col gap-1" aria-label="Main navigation">
           {navItems.map((item) => {
             const isActive = pathname === item.href;
             return (
@@ -86,23 +94,19 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         </nav>
       </aside>
 
-      {/* Main Content Area */}
       <div className="flex flex-1 flex-col">
-        {/* Mobile Header */}
         <div className="flex items-center justify-between border-b border-border bg-surface p-4 md:hidden">
-          <h1 className="font-heading text-lg font-bold">Margin</h1>
+          <span className="font-heading text-lg font-bold">Margin</span>
           <SyncPill />
         </div>
         <main className="flex-1 pb-24 md:pb-0">
-          {/* Constrain content width and center on desktop */}
           <div className="mx-auto w-full max-w-5xl p-4 md:p-8">
             {children}
           </div>
         </main>
       </div>
 
-      {/* Mobile Bottom Tab Bar */}
-      <nav className="fixed bottom-0 left-0 right-0 z-50 flex items-center justify-around border-t border-border bg-surface pt-2 md:hidden" style={{ paddingBottom: "env(safe-area-inset-bottom, 8px)" }}>
+      <nav className="fixed bottom-0 left-0 right-0 z-50 flex items-center justify-around border-t border-border bg-surface pt-2 md:hidden" style={{ paddingBottom: "env(safe-area-inset-bottom, 8px)" }} aria-label="Mobile navigation">
         {navItems.slice(0, 2).map((item) => {
           const isActive = pathname === item.href;
           return (
@@ -120,9 +124,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           );
         })}
         
-        {/* Central Add Button */}
         <button 
-          onClick={() => window.dispatchEvent(new CustomEvent("open-add-sheet"))}
+          onClick={() => setIsSheetOpen(true)}
           className="flex h-14 w-14 -translate-y-4 items-center justify-center rounded-full bg-primary text-primary-text shadow-lg active:scale-95 transition-transform"
           aria-label="Add expense"
         >
@@ -146,6 +149,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           );
         })}
       </nav>
+
+      <AddExpenseSheet isOpen={isSheetOpen} onClose={() => setIsSheetOpen(false)} />
     </div>
   );
 }

@@ -3,18 +3,26 @@ import { NextResponse } from "next/server";
 import { pushSync, pullSync } from "../../../server/sync";
 import { OutboxOp } from "../../../lib/types";
 
-export const runtime = "nodejs"; // Ensure Neon WebSocket pool works
+export const runtime = "nodejs";
 
 export async function POST(req: Request) {
-  const { userId } = await auth();
-  if (!userId) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
   try {
-    const body = await req.json();
-    const ops: OutboxOp[] = body.ops;
+    const { userId } = await auth();
+    if (!userId) {
+      const hasAuthHeader = req.headers.has("authorization");
+      const hasSessionCookie = req.headers.has("cookie") && req.headers.get("cookie")?.includes("__session");
+      console.log(`TEMP: 401 on POST. AuthHeader: ${hasAuthHeader}, SessionCookie: ${hasSessionCookie}`);
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
 
+    let body;
+    try {
+      body = await req.json();
+    } catch (e) {
+      return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
+    }
+
+    const ops: OutboxOp[] = body.ops;
     if (!Array.isArray(ops) || ops.length === 0) {
       return NextResponse.json({ accepted: [] });
     }
@@ -28,15 +36,22 @@ export async function POST(req: Request) {
 }
 
 export async function GET(req: Request) {
-  const { userId } = await auth();
-  if (!userId) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
   try {
+    const { userId } = await auth();
+    if (!userId) {
+      const hasAuthHeader = req.headers.has("authorization");
+      const hasSessionCookie = req.headers.has("cookie") && req.headers.get("cookie")?.includes("__session");
+      console.log(`TEMP: 401 on GET. AuthHeader: ${hasAuthHeader}, SessionCookie: ${hasSessionCookie}`);
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     const url = new URL(req.url);
-    const since = parseInt(url.searchParams.get("since") || "0", 10);
-    const limit = parseInt(url.searchParams.get("limit") || "500", 10);
+    let since = parseInt(url.searchParams.get("since") || "0", 10);
+    if (isNaN(since) || since < 0) since = 0;
+
+    let limit = parseInt(url.searchParams.get("limit") || "500", 10);
+    if (isNaN(limit)) limit = 500;
+    limit = Math.max(1, Math.min(limit, 500));
 
     const result = await pullSync(userId, since, limit);
     return NextResponse.json(result);

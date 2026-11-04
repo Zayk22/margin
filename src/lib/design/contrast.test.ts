@@ -13,6 +13,11 @@ function hexToRgb(hex: string): Rgb {
   };
 }
 
+function rgbToHex({ r, g, b }: Rgb): string {
+  const toHex = (c: number) => Math.round(c * 255).toString(16).padStart(2, "0");
+  return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
+}
+
 function rgbaToRgba(value: string): Rgba {
   const match = value.match(/rgba?\(([^)]+)\)/);
   if (!match) throw new Error(`Invalid color: ${value}`);
@@ -82,6 +87,22 @@ const pairs: Pair[] = [
   { theme: "light", label: "danger fill on bg", fg: "#C2412D", bg: "#F6F5F1", required: 3.0 },
   { theme: "light", label: "focus ring on bg", fg: "#151715", bg: "#F6F5F1", required: 3.0 },
 ];
+
+// Category colours as icon against 14% tint over surface
+const catColorsDark = ["#7DA6D6", "#C9A27E", "#7EBBC9", "#9C94D1", "#9AA3AE", "#D08FA8", "#B58FC9", "#8FB3A1", "#A8A59C"];
+const catColorsLight = ["#3F6FA8", "#8F6B45", "#3E8497", "#6A60A8", "#5F6872", "#A8566F", "#8A5AA0", "#4F7F69", "#6E6B63"];
+
+catColorsDark.forEach((color, i) => {
+  const surface = hexToRgb("#171A18");
+  const tinted = blend({ ...hexToRgb(color), a: 0.14 }, surface);
+  pairs.push({ theme: "dark", label: `cat-${i+1} on 14% tint`, fg: color, bg: rgbToHex(tinted), required: 3.0 });
+});
+
+catColorsLight.forEach((color, i) => {
+  const surface = hexToRgb("#FFFFFF");
+  const tinted = blend({ ...hexToRgb(color), a: 0.14 }, surface);
+  pairs.push({ theme: "light", label: `cat-${i+1} on 14% tint`, fg: color, bg: rgbToHex(tinted), required: 3.0 });
+});
 
 describe("WCAG AA contrast", () => {
   it("prints the table and fails any pair below required ratio", () => {

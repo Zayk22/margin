@@ -5,9 +5,13 @@ const formatter = new Intl.NumberFormat("en-NG", {
   maximumFractionDigits: 2,
 });
 
-/**
- * Formats an integer amount of kobo into a Naira string (e.g., 150050 -> "₦1,500.50").
- */
+const wholeFormatter = new Intl.NumberFormat("en-NG", {
+  style: "currency",
+  currency: "NGN",
+  minimumFractionDigits: 0,
+  maximumFractionDigits: 0,
+});
+
 export function formatKobo(amountKobo: number): string {
   if (!Number.isInteger(amountKobo)) {
     throw new Error("Amount must be an integer number of kobo");
@@ -15,15 +19,33 @@ export function formatKobo(amountKobo: number): string {
   return formatter.format(amountKobo / 100);
 }
 
-/**
- * Parses a string (e.g., from a keypad or input field) into an integer number of kobo.
- * Throws if the string contains invalid characters or represents an invalid amount.
- */
+export function formatKoboParts(amountKobo: number): { whole: string; decimal: string } {
+  if (!Number.isInteger(amountKobo)) {
+    throw new Error("Amount must be an integer number of kobo");
+  }
+  
+  const isNegative = amountKobo < 0;
+  const absKobo = Math.abs(amountKobo);
+  
+  const wholeNaira = Math.floor(absKobo / 100);
+  const decimalKobo = absKobo % 100;
+  
+  const wholeStr = wholeFormatter.format(wholeNaira);
+  const decimalStr = String(decimalKobo).padStart(2, "0");
+  
+  const sign = isNegative ? "-" : "";
+  
+  // wholeFormatter might include .00 if the locale insists, but maxFractionDigits: 0 prevents it.
+  return {
+    whole: `${sign}${wholeStr}`,
+    decimal: `.${decimalStr}`
+  };
+}
+
 export function parseKobo(input: string): number {
   const sanitized = input.trim();
   if (sanitized === "") return 0;
 
-  // Match an optional negative sign, digits, an optional decimal point, and up to 2 decimal places
   const match = sanitized.match(/^-?\d+(\.\d{1,2})?$/);
   if (!match) {
     throw new Error(`Invalid money format: ${input}`);

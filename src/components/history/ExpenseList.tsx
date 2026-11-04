@@ -8,6 +8,7 @@ import { formatKobo } from "@/lib/money";
 import { toLocalDateString } from "@/lib/dates";
 import { Expense, Category } from "@/lib/types";
 import { Trash2 } from "lucide-react";
+import { CategoryChip } from "@/components/shared/CategoryChip";
 
 function formatDateGroup(dateStr: string) {
   const today = toLocalDateString(new Date());
@@ -54,7 +55,6 @@ export function ExpenseList({
     return acc;
   }, {} as Record<string, Category>);
 
-  // Filter active expenses
   const filtered = rawExpenses.filter((e) => {
     if (e.deletedAt) return false;
     if (categoryFilter && e.categoryId !== categoryFilter) return false;
@@ -70,14 +70,12 @@ export function ExpenseList({
     );
   }
 
-  // Group by date
   const grouped = filtered.reduce((acc, exp) => {
     if (!acc[exp.occurredOn]) acc[exp.occurredOn] = [];
     acc[exp.occurredOn].push(exp);
     return acc;
   }, {} as Record<string, Expense[]>);
 
-  // Sort dates descending
   const sortedDates = Object.keys(grouped).sort((a, b) => b.localeCompare(a));
 
   const handleDelete = async (expense: Expense) => {
@@ -103,7 +101,9 @@ export function ExpenseList({
             
             <div className="overflow-hidden rounded-card border border-border bg-surface">
               {dayExpenses.map((expense, idx) => {
-                const category = catMap[expense.categoryId] || { name: "Unknown", colorToken: "gray" };
+                const category = catMap[expense.categoryId] || { 
+                  name: "Unknown", icon: "more-horizontal", colorToken: "cat-9" 
+                };
                 
                 return (
                   <div
@@ -112,9 +112,14 @@ export function ExpenseList({
                       idx !== dayExpenses.length - 1 ? "border-b border-border" : ""
                     }`}
                   >
-                    <div className="flex flex-col">
-                      <span className="text-sm font-medium">{expense.note || category.name}</span>
-                      <span className="text-xs text-text-muted">{category.name}</span>
+                    <div className="flex items-center gap-3">
+                      <CategoryChip category={category} />
+                      <div className="flex flex-col">
+                        <span className="text-sm font-medium">{expense.note || category.name}</span>
+                        {expense.note && (
+                          <span className="text-xs text-text-muted">{category.name}</span>
+                        )}
+                      </div>
                     </div>
                     <div className="flex items-center gap-4">
                       <span className="font-heading text-base font-semibold tabular-nums">

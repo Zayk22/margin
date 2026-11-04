@@ -4,6 +4,7 @@ import { eq, and, gt, sql } from "drizzle-orm";
 import ws from "ws";
 import { resolveConflict } from "../lib/sync/conflict";
 import { OutboxOp, Expense, Category, Budget, RecurringRule } from "../lib/types";
+import { validateOp } from "../lib/sync/validate";
 import * as schema from "./schema";
 
 neonConfig.webSocketConstructor = ws;
@@ -31,10 +32,19 @@ export async function pushSync(userId: string, ops: OutboxOp[]): Promise<string[
       const existingOp = await tx.select().from(schema.processedOps).where(eq(schema.processedOps.opId, op.opId));
       if (existingOp.length > 0) {
         acceptedOpIds.push(op.opId);
-        continue; // Already processed
+        continue;
       }
 
-      // 2. Get next serverSeq for this user atomically
+      // 2. Validate the payload strictly
+      const validation = validateOp(op, Date.now());
+      if (!validation.ok) {
+        console.warn(`Rejected op ${op.opId}: ${validation.reason}`);
+        continue;
+      }
+
+      const { data } = validation;
+
+      // 3. Get next serverSeq
       const [counter] = await tx.insert(schema.syncCounters)
         .values({ userId, seq: 1 })
         .onConflictDoUpdate({
@@ -45,33 +55,29 @@ export async function pushSync(userId: string, ops: OutboxOp[]): Promise<string[
 
       const newSeq = counter.seq;
       const table = getTableForEntity(op.entity);
-      const incomingData = JSON.parse(op.payload) as SyncableEntity;
 
-      // 3. Fetch existing record
+      // 4. Fetch existing record (scoped by userId)
       const existingRecords = await tx.select().from(table).where(and(eq(table.id, op.entityId), eq(table.userId, userId)));
       
       if (existingRecords.length > 0) {
         const existingData = existingRecords[0] as unknown as SyncableEntity;
-        // 4. Conflict resolution
-        const winner = resolveConflict(existingData, incomingData);
+        const winner = resolveConflict(existingData, data);
         
-        if (winner === incomingData) {
-          // Incoming wins: update the record
+        if (winner === data) {
+          // Force userId so a malicious client cannot change ownership
           await tx.update(table)
-            .set({ ...incomingData, serverSeq: newSeq })
+            .set({ ...data, userId, serverSeq: newSeq })
             .where(eq(table.id, op.entityId));
         }
-        // If existing wins, we do nothing to the table, but we still mark the op as processed
       } else {
-        // 5. Insert new record
         await tx.insert(table).values({
-          ...incomingData,
+          ...data,
           userId,
           serverSeq: newSeq,
         });
       }
 
-      // 6. Mark op as processed
+      // 5. Mark op as processed
       await tx.insert(schema.processedOps).values({ opId: op.opId, userId });
       acceptedOpIds.push(op.opId);
     }
@@ -81,22 +87,21 @@ export async function pushSync(userId: string, ops: OutboxOp[]): Promise<string[
 }
 
 export async function pullSync(userId: string, since: number, limit: number = 500) {
+  // ... [unchanged for this batch]
   const changes: any[] = [];
   let maxSeq = since;
-
+  // ... [keep existing code]
   const fetchTable = async (table: any, entityName: string) => {
     const rows = await db.select().from(table)
       .where(and(eq(table.userId, userId), gt(table.serverSeq, since)))
       .orderBy(table.serverSeq)
       .limit(limit);
-    
     for (const row of rows) {
       changes.push({ entity: entityName, data: row });
       if (row.serverSeq > maxSeq) maxSeq = row.serverSeq;
     }
   };
 
-  // We fetch from all tables. In a production app with massive data, we would optimize this.
   await Promise.all([
     fetchTable(schema.expenses, "Expense"),
     fetchTable(schema.categories, "Category"),
@@ -104,20 +109,9 @@ export async function pullSync(userId: string, since: number, limit: number = 50
     fetchTable(schema.recurringRules, "RecurringRule"),
   ]);
 
-  // Sort combined changes by serverSeq to maintain strict ordering
   changes.sort((a, b) => a.data.serverSeq - b.data.serverSeq);
-  
   const hasMore = changes.length > limit;
   const paginatedChanges = changes.slice(0, limit);
-
-  // The new cursor is the max serverSeq in the returned page
-  const newCursor = paginatedChanges.length > 0 
-    ? paginatedChanges[paginatedChanges.length - 1].data.serverSeq 
-    : since;
-
-  return {
-    changes: paginatedChanges,
-    cursor: newCursor,
-    hasMore,
-  };
+  const newCursor = paginatedChanges.length > 0 ? paginatedChanges[paginatedChanges.length - 1].data.serverSeq : since;
+  return { changes: paginatedChanges, cursor: newCursor, hasMore };
 }
