@@ -3,11 +3,9 @@
 import { useLiveQuery } from "dexie-react-hooks";
 import { useAuth } from "@clerk/nextjs";
 import { getDb } from "@/local/db";
-import { deleteExpense } from "@/local/repositories";
 import { formatKobo } from "@/lib/money";
 import { toLocalDateString } from "@/lib/dates";
 import { Expense, Category } from "@/lib/types";
-import { Trash2 } from "lucide-react";
 import { CategoryChip } from "@/components/shared/CategoryChip";
 
 function formatDateGroup(dateStr: string) {
@@ -27,11 +25,13 @@ function formatDateGroup(dateStr: string) {
 export function ExpenseList({
   search,
   categoryFilter,
-  onDelete,
+  monthFilter,
+  onEdit,
 }: {
   search: string;
   categoryFilter: string;
-  onDelete: (expense: Expense) => void;
+  monthFilter: string;
+  onEdit: (expense: Expense) => void;
 }) {
   const { userId } = useAuth();
   const db = userId ? getDb(userId) : null;
@@ -57,6 +57,7 @@ export function ExpenseList({
 
   const filtered = rawExpenses.filter((e) => {
     if (e.deletedAt) return false;
+    if (monthFilter && !e.occurredOn.startsWith(monthFilter)) return false;
     if (categoryFilter && e.categoryId !== categoryFilter) return false;
     if (search && !e.note.toLowerCase().includes(search.toLowerCase())) return false;
     return true;
@@ -64,8 +65,8 @@ export function ExpenseList({
 
   if (filtered.length === 0) {
     return (
-      <div className="rounded-card border border-border bg-surface p-8 text-center text-sm text-text-muted">
-        No expenses found.
+      <div className="rounded-card border border-border bg-surface p-8 text-center flex flex-col items-center gap-3">
+        <p className="text-sm text-text-muted">No expenses found for this period.</p>
       </div>
     );
   }
@@ -77,12 +78,6 @@ export function ExpenseList({
   }, {} as Record<string, Expense[]>);
 
   const sortedDates = Object.keys(grouped).sort((a, b) => b.localeCompare(a));
-
-  const handleDelete = async (expense: Expense) => {
-    if (!db) return;
-    await deleteExpense(db, expense);
-    onDelete(expense);
-  };
 
   return (
     <div className="flex flex-col gap-6">
@@ -105,19 +100,23 @@ export function ExpenseList({
                   name: "Unknown", icon: "more-horizontal", colorToken: "cat-9" 
                 };
                 
+                const title = expense.note || category.name;
+                const subtitle = expense.note ? category.name : null;
+                
                 return (
-                  <div
+                  <button
                     key={expense.id}
-                    className={`flex items-center justify-between p-4 ${
+                    onClick={() => onEdit(expense)}
+                    className={`flex w-full items-center justify-between p-4 text-left transition-colors hover:bg-surface-raised ${
                       idx !== dayExpenses.length - 1 ? "border-b border-border" : ""
                     }`}
                   >
                     <div className="flex items-center gap-3">
                       <CategoryChip category={category} />
                       <div className="flex flex-col">
-                        <span className="text-sm font-medium">{expense.note || category.name}</span>
-                        {expense.note && (
-                          <span className="text-xs text-text-muted">{category.name}</span>
+                        <span className="text-sm font-medium">{title}</span>
+                        {subtitle && (
+                          <span className="text-xs text-text-muted">{subtitle}</span>
                         )}
                       </div>
                     </div>
@@ -125,15 +124,8 @@ export function ExpenseList({
                       <span className="font-heading text-base font-semibold tabular-nums">
                         {formatKobo(expense.amountKobo)}
                       </span>
-                      <button
-                        onClick={() => handleDelete(expense)}
-                        className="rounded-full p-2 text-text-muted hover:bg-danger/10 hover:text-danger transition-colors"
-                        aria-label="Delete expense"
-                      >
-                        <Trash2 size={16} />
-                      </button>
                     </div>
-                  </div>
+                  </button>
                 );
               })}
             </div>
