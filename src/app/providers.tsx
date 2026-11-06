@@ -8,18 +8,19 @@ import { seedDefaultCategories } from "@/local/seed";
 import { getDeviceId } from "@/lib/device";
 import { runRecurringGeneration } from "@/local/recurring-engine";
 import { toLocalDateString } from "@/lib/dates";
+import { syncStatusStore } from "@/sync/status";
 
 function SyncInitializer() {
   const { userId, getToken, isSignedIn, isLoaded } = useAuth();
 
   useEffect(() => {
-    if (!isLoaded || !isSignedIn || !userId) return;
+    if (!isLoaded) return;
 
-    localStorage.setItem("margin-last-user-id", userId);
-
-    const db = getDb(userId);
+    // If not signed in, use the "guest" database
+    const activeUserId = isSignedIn && userId ? userId : "guest";
+    const db = getDb(activeUserId);
     const deviceId = getDeviceId();
-    
+
     const initialize = async () => {
       try {
         await seedDefaultCategories(db, deviceId);
@@ -29,7 +30,9 @@ function SyncInitializer() {
           toLocalDateString(new Date()), 
           new Date().toISOString()
         );
-        triggerDebouncedSync({ userId, getToken });
+        if (isSignedIn) {
+          triggerDebouncedSync({ userId: activeUserId, getToken });
+        }
       } catch (err) {
         console.error("Initialization failed", err);
       }
@@ -37,13 +40,18 @@ function SyncInitializer() {
 
     initialize();
 
-    const config = {
-      userId,
-      getToken: () => getToken(),
-    };
-
-    const cleanup = initializeSyncTriggers(config);
-    return cleanup;
+    if (isSignedIn && userId) {
+      localStorage.setItem("margin-last-user-id", userId);
+      const config = {
+        userId,
+        getToken: () => getToken(),
+      };
+      const cleanup = initializeSyncTriggers(config);
+      return cleanup;
+    } else {
+      // If guest, do not start the sync engine. Just set the status.
+      syncStatusStore.setStatus("Sign in to sync");
+    }
   }, [userId, getToken, isSignedIn, isLoaded]);
 
   return null;

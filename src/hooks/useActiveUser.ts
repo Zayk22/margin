@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 
 export type ActiveUser = {
   userId: string | null;
-  mode: "loading" | "authenticated" | "stored" | "unauthenticated";
+  mode: "loading" | "authenticated" | "stored" | "guest";
 };
 
 export function useActiveUser(): ActiveUser {
@@ -27,7 +27,7 @@ export function useActiveUser(): ActiveUser {
   }, [isLoaded, userId]);
 
   if (!isLoaded || !hasCheckedStorage) {
-    return { userId: storedId, mode: "loading" };
+    return { userId: storedId || "guest", mode: "loading" };
   }
 
   if (userId) {
@@ -38,5 +38,6 @@ export function useActiveUser(): ActiveUser {
     return { userId: storedId, mode: "stored" };
   }
 
-  return { userId: null, mode: "unauthenticated" };
+  // If no user is signed in and no stored ID exists, fall back to guest mode
+  return { userId: "guest", mode: "guest" };
 }

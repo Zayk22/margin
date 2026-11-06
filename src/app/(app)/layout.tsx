@@ -20,16 +20,28 @@ function SyncPill() {
   if (status === "Offline" || status.includes("waiting")) {
     colorClass = "bg-warn/10 text-warn-strong border-warn/20";
   } else if (status === "Sign in to sync") {
-    colorClass = "bg-surface-raised text-text-muted border-border";
+    colorClass = "bg-surface-raised text-text-muted border-border hover:bg-border/50 transition-colors";
+  }
+
+  const content = (
+    <>
+      <span className={`mr-1.5 h-1.5 w-1.5 rounded-full ${status === "Syncing" ? "animate-pulse bg-current" : "bg-current"}`}></span>
+      {status}
+    </>
+  );
+
+  // If guest, make the pill a clickable link to sign in
+  if (status === "Sign in to sync") {
+    return (
+      <Link href="/sign-in" aria-live="polite" className={`inline-flex items-center rounded-pill border px-2.5 py-1 text-xs font-medium tabular-nums ${colorClass}`}>
+        {content}
+      </Link>
+    );
   }
 
   return (
-    <div
-      aria-live="polite"
-      className={`inline-flex items-center rounded-pill border px-2.5 py-1 text-xs font-medium tabular-nums ${colorClass}`}
-    >
-      <span className={`mr-1.5 h-1.5 w-1.5 rounded-full ${status === "Syncing" ? "animate-pulse bg-current" : "bg-current"}`}></span>
-      {status}
+    <div aria-live="polite" className={`inline-flex items-center rounded-pill border px-2.5 py-1 text-xs font-medium tabular-nums ${colorClass}`}>
+      {content}
     </div>
   );
 }
@@ -45,12 +57,6 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     window.addEventListener("open-add-sheet", handleOpen);
     return () => window.removeEventListener("open-add-sheet", handleOpen);
   }, []);
-
-  useEffect(() => {
-    if (mode === "unauthenticated") {
-      router.push("/sign-in");
-    }
-  }, [mode, router]);
 
   if (mode === "loading") {
     return (

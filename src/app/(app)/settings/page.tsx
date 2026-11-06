@@ -11,12 +11,12 @@ import { syncStatusStore } from "@/sync/status";
 import { useActiveUser } from "@/hooks/useActiveUser";
 import { ThemeControl } from "@/components/settings/ThemeControl";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
-import { Download, LogOut, RefreshCw, ChevronRight } from "lucide-react";
+import { Download, LogOut, RefreshCw, LogIn } from "lucide-react";
 
 const APP_VERSION = "0.1.0";
 
 export default function SettingsPage() {
-  const { userId } = useActiveUser();
+  const { userId, mode } = useActiveUser();
   const { user } = useUser();
   const { signOut } = useClerk();
   const { getToken } = useAuth();
@@ -93,7 +93,8 @@ export default function SettingsPage() {
       await signOut();
       if (db) await db.delete();
       localStorage.removeItem("margin-last-user-id");
-      window.location.assign("/sign-in");
+      // Redirect to home instead of sign-in
+      window.location.assign("/");
     } catch (err) {
       console.error("Sign out failed", err);
       setSignOutError("Failed to sign out. Please try again.");
@@ -150,22 +151,38 @@ export default function SettingsPage() {
       <div className="rounded-card border border-border bg-surface p-6 flex flex-col gap-4">
         <div>
           <h2 className="font-heading text-lg font-bold">Account</h2>
-          {user?.primaryEmailAddress && (
-            <p className="text-sm text-text-muted mt-1">
-              Signed in as <span className="font-medium text-text">{user.primaryEmailAddress.emailAddress}</span>
-            </p>
+          {mode === "guest" ? (
+             <p className="text-sm text-text-muted mt-1">
+               You are browsing as a guest. Sign in to sync your data across devices.
+             </p>
+          ) : (
+            user?.primaryEmailAddress && (
+              <p className="text-sm text-text-muted mt-1">
+                Signed in as <span className="font-medium text-text">{user.primaryEmailAddress.emailAddress}</span>
+              </p>
+            )
           )}
           <p className="text-sm text-text-muted mt-1">
             Sync status: <span className="font-medium text-text">{syncStatus}</span>
           </p>
         </div>
-        <button
-          onClick={handleSignOutClick}
-          disabled={isSigningOut}
-          className="flex w-fit items-center gap-2 rounded-control border border-border bg-surface-raised px-4 py-2 text-sm font-medium hover:bg-border/50 transition-colors disabled:opacity-50"
-        >
-          <LogOut size={16} /> {isSigningOut ? "Signing out..." : "Sign Out"}
-        </button>
+        
+        {mode === "guest" ? (
+          <Link
+            href="/sign-in"
+            className="flex w-fit items-center gap-2 rounded-control bg-primary px-4 py-2 text-sm font-medium text-primary-text hover:bg-primary-hover transition-colors"
+          >
+            <LogIn size={16} /> Sign In to Sync
+          </Link>
+        ) : (
+          <button
+            onClick={handleSignOutClick}
+            disabled={isSigningOut}
+            className="flex w-fit items-center gap-2 rounded-control border border-border bg-surface-raised px-4 py-2 text-sm font-medium hover:bg-border/50 transition-colors disabled:opacity-50"
+          >
+            <LogOut size={16} /> {isSigningOut ? "Signing out..." : "Sign Out"}
+          </button>
+        )}
         {signOutError && (
           <p className="text-sm text-danger">{signOutError}</p>
         )}
