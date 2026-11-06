@@ -3,6 +3,8 @@ import { MarginDatabase, getDb } from "./db";
 import { seedDefaultCategories } from "./seed";
 import { DEFAULT_CATEGORIES } from "../lib/categories";
 
+const DEVICE_ID = "test-device-1";
+
 describe("seedDefaultCategories", () => {
   let db: MarginDatabase;
 
@@ -13,7 +15,7 @@ describe("seedDefaultCategories", () => {
   });
 
   it("seeds 9 default categories into a fresh database", async () => {
-    await seedDefaultCategories(db);
+    await seedDefaultCategories(db, DEVICE_ID);
     const cats = await db.categories.toArray();
     expect(cats).toHaveLength(9);
     expect(cats.find((c) => c.name === "Health")).toBeDefined();
@@ -21,10 +23,9 @@ describe("seedDefaultCategories", () => {
 
   it("migrates old tokens, adds missing Health, and preserves metadata", async () => {
     const oldNow = "2024-01-01T00:00:00.000Z";
-    // Simulate old 8 categories with old tokens
     const oldCats = DEFAULT_CATEGORIES.slice(0, 8).map((c) => ({
       ...c,
-      colorToken: "blue", // old token
+      colorToken: "blue",
       createdAt: oldNow,
       updatedAt: oldNow,
       deletedAt: null,
@@ -32,7 +33,7 @@ describe("seedDefaultCategories", () => {
     }));
     await db.categories.bulkPut(oldCats);
 
-    await seedDefaultCategories(db);
+    await seedDefaultCategories(db, DEVICE_ID);
 
     const cats = await db.categories.toArray();
     expect(cats).toHaveLength(9);
@@ -42,8 +43,8 @@ describe("seedDefaultCategories", () => {
   });
 
   it("is idempotent and does not duplicate", async () => {
-    await seedDefaultCategories(db);
-    await seedDefaultCategories(db);
+    await seedDefaultCategories(db, DEVICE_ID);
+    await seedDefaultCategories(db, DEVICE_ID);
     const cats = await db.categories.toArray();
     expect(cats).toHaveLength(9);
   });
@@ -54,22 +55,22 @@ describe("seedDefaultCategories", () => {
       isDefault: false, createdAt: "123", updatedAt: "123", deletedAt: null, deviceId: "x"
     };
     await db.categories.put(custom);
-    await seedDefaultCategories(db);
+    await seedDefaultCategories(db, DEVICE_ID);
     const cats = await db.categories.toArray();
     expect(cats).toHaveLength(10);
     expect(cats.find((c) => c.id === "custom-1")).toEqual(custom);
   });
 
   it("does not write to outbox", async () => {
-    await seedDefaultCategories(db);
+    await seedDefaultCategories(db, DEVICE_ID);
     const ops = await db.outbox.toArray();
     expect(ops).toHaveLength(0);
   });
 
   it("handles concurrent calls without throwing", async () => {
     await Promise.all([
-      seedDefaultCategories(db),
-      seedDefaultCategories(db)
+      seedDefaultCategories(db, DEVICE_ID),
+      seedDefaultCategories(db, DEVICE_ID)
     ]);
     const cats = await db.categories.toArray();
     expect(cats).toHaveLength(9);
