@@ -7,8 +7,9 @@ import { getDb } from "@/local/db";
 import { saveBudget } from "@/local/repositories";
 import { toLocalMonthString, getPreviousMonth } from "@/lib/dates";
 import { formatKobo } from "@/lib/money";
-import { getBudgetState, createCopiedBudgets } from "@/lib/budget";
+import { getBudgetState, budgetPercent, createCopiedBudgets } from "@/lib/budget";
 import { Budget, Expense, Category } from "@/lib/types";
+import { getDeviceId } from "@/lib/device";
 import { MonthSwitcher } from "@/components/shared/MonthSwitcher";
 import { CategoryChip } from "@/components/shared/CategoryChip";
 import { BudgetSheet } from "@/components/budgets/BudgetSheet";
@@ -48,7 +49,13 @@ export default function BudgetsPage() {
 
   const handleCopy = async () => {
     if (!userId) return;
-    const copied = createCopiedBudgets(prevBudgets, currentMonth, currentBudgets, "browser");
+    const copied = createCopiedBudgets(
+      prevBudgets,
+      currentMonth,
+      currentBudgets,
+      getDeviceId(),
+      new Date().toISOString()
+    );
     for (const b of copied) {
       await saveBudget(db!, b);
     }
@@ -68,7 +75,6 @@ export default function BudgetsPage() {
 
       {currentBudgets.length > 0 ? (
         <div className="rounded-card border border-border bg-surface p-6 flex flex-col gap-4">
-          {/* Mobile Layout */}
           <div className="flex flex-col md:hidden">
             <p className="text-sm text-text-muted">Remaining</p>
             <div className="flex items-baseline gap-2">
@@ -89,7 +95,6 @@ export default function BudgetsPage() {
             </div>
           </div>
 
-          {/* Desktop Layout */}
           <div className="hidden md:grid grid-cols-3 gap-4">
             <div>
               <p className="text-xs text-text-muted">Total Budgeted</p>
@@ -129,7 +134,7 @@ export default function BudgetsPage() {
               if (!category) return null;
               const spent = spentByCategory[b.categoryId] || 0;
               const state = getBudgetState(spent, b.amountKobo);
-              const percent = Math.min((spent / b.amountKobo) * 100, 100);
+              const percent = Math.min(budgetPercent(spent, b.amountKobo), 100);
               
               let barColor = "bg-success";
               let textLabel = "Under budget";
@@ -165,7 +170,7 @@ export default function BudgetsPage() {
                   </div>
                   <div className="flex justify-between text-[12px] mt-1 w-full">
                     <span className={`font-medium ${textColor}`}>{textLabel}</span>
-                    <span className="text-text-muted">{Math.round((spent / b.amountKobo) * 100)}%</span>
+                    <span className="text-text-muted">{budgetPercent(spent, b.amountKobo)}%</span>
                   </div>
                 </button>
               );

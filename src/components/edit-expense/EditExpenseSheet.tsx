@@ -5,8 +5,8 @@ import { useAuth } from "@clerk/nextjs";
 import { getDb } from "@/local/db";
 import { saveExpense, deleteExpense } from "@/local/repositories";
 import { parseKobo, formatKobo } from "@/lib/money";
-import { toLocalDateString } from "@/lib/dates";
 import { DEFAULT_CATEGORIES } from "@/lib/categories";
+import { getDeviceId } from "@/lib/device";
 import { Expense } from "@/lib/types";
 import { triggerDebouncedSync } from "@/sync/triggers";
 import { X, Delete, Trash2 } from "lucide-react";
@@ -69,6 +69,7 @@ export function EditExpenseSheet({
         note,
         occurredOn: date,
         updatedAt: now,
+        deviceId: getDeviceId(),
       });
 
       triggerDebouncedSync({ userId, getToken });
@@ -85,7 +86,13 @@ export function EditExpenseSheet({
     setIsSaving(true);
     try {
       const db = getDb(userId);
-      await deleteExpense(db, expense);
+      const tombstone = {
+        ...expense,
+        deletedAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        deviceId: getDeviceId(),
+      };
+      await deleteExpense(db, tombstone);
       triggerDebouncedSync({ userId, getToken });
       onDelete(expense);
       onClose();

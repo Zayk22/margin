@@ -1,11 +1,12 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useAuth } from "@clerk/nextjs";
 import { getDb } from "@/local/db";
 import { saveBudget } from "@/local/repositories";
 import { parseKobo, formatKobo } from "@/lib/money";
 import { Budget } from "@/lib/types";
+import { getDeviceId } from "@/lib/device";
 import { triggerDebouncedSync } from "@/sync/triggers";
 import { X, Delete, Trash2 } from "lucide-react";
 
@@ -17,12 +18,84 @@ export function BudgetSheet({
   const { userId, getToken } = useAuth();
   const [amount, setAmount] = useState("");
   const [isSaving, setIsSaving] = useState(false);
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const titleId = "budget-sheet-title";
 
   useEffect(() => {
     if (isOpen) {
       setAmount(existingBudget ? String(existingBudget.amountKobo) : "");
     }
   }, [isOpen, existingBudget]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const previouslyFocused = document.activeElement as HTMLElement | null;
+
+    const getFocusable = () => {
+      if (!dialogRef.current) return [];
+      return Array.from(
+        dialogRef.current.querySelectorAll<HTMLElement>(
+          'button:not([disabled]), [tabindex]:not([tabindex="-1"])'
+        )
+      );
+    };
+
+    const focusable = getFocusable();
+    if (focusable.length > 0) {
+      focusable[0].focus();
+    }
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        e.preventDefault();
+        onClose();
+        return;
+      }
+
+      if (e.key === "Tab") {
+        const items = getFocusable();
+        if (items.length === 0) return;
+        const first = items[0];
+        const last = items[items.length - 1];
+        if (e.shiftKey && document.activeElement === first) {
+          e.preventDefault();
+          last.focus();
+        } else if (!e.shiftKey && document.activeElement === last) {
+          e.preventDefault();
+          first.focus();
+        }
+        return;
+      }
+
+      const target = e.target as HTMLElement;
+      const isInput = target.tagName === "INPUT" || target.tagName === "TEXTAREA";
+      if (isInput) return;
+
+      if (e.key >= "0" && e.key <= "9") {
+        e.preventDefault();
+        setAmount((prev) => (prev.length < 10 ? prev + e.key : prev));
+      } else if (e.key === "Backspace") {
+        e.preventDefault();
+        setAmount((prev) => prev.slice(0, -1));
+      } else if (e.key === "Enter") {
+        e.preventDefault();
+        if (amount) {
+          const btn = dialogRef.current?.querySelector<HTMLButtonElement>('[data-save-button="true"]');
+          btn?.click();
+        }
+      }
+    };
+
+    document.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown);
+      if (previouslyFocused && typeof previouslyFocused.focus === "function") {
+        previouslyFocused.focus();
+      }
+    };
+  }, [isOpen, onClose, amount]);
 
   if (!isOpen) return null;
 
@@ -47,7 +120,7 @@ export function BudgetSheet({
         createdAt: existingBudget ? existingBudget.createdAt : now,
         updatedAt: now,
         deletedAt: null,
-        deviceId: "browser",
+        deviceId: getDeviceId(),
       };
       
       await saveBudget(db, budget);
@@ -70,6 +143,7 @@ export function BudgetSheet({
         ...existingBudget,
         deletedAt: now,
         updatedAt: now,
+        deviceId: getDeviceId(),
       };
       
       await saveBudget(db, tombstone);
@@ -82,14 +156,16 @@ export function BudgetSheet({
     }
   };
 
+  const saveDisabled = !amount || isSaving;
+
   return (
-    <div className="fixed inset-0 z-[60] flex items-end justify-center bg-black/50 md:items-center">
-      <div className="flex w-full max-w-md flex-col rounded-t-card bg-surface p-4 shadow-xl md:rounded-card">
+    <div className="fixed inset-0 z-[60] flex items-end justify-center bg-black/50 md:items-center" onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
+      <div ref={dialogRef} role="dialog" aria-modal="true" aria-labelledby={titleId} className="flex w-full max-w-md flex-col rounded-t-card bg-surface p-4 shadow-xl md:rounded-card">
         <div className="mb-4 flex items-center justify-between">
-          <h2 className="font-heading text-lg font-bold truncate pr-4">
+          <h2 id={titleId} className="font-heading text-lg font-bold truncate pr-4">
             {existingBudget ? "Edit Budget" : "Set Budget"}: {categoryName}
           </h2>
-          <button onClick={onClose} className="rounded-full p-2 hover:bg-surface-raised"><X size={20} /></button>
+          <button onClick={onClose} className="rounded-full p-2 hover:bg-surface-raised" aria-label="Close"><X size={20} /></button>
         </div>
 
         <div className="mb-4 text-center">
@@ -123,8 +199,9 @@ export function BudgetSheet({
           )}
           <button
             onClick={handleSave}
-            disabled={!amount || isSaving}
-            className="flex-1 rounded-control bg-primary py-3 text-center font-medium text-primary-text disabled:opacity-50 transition-opacity"
+            disabled={saveDisabled}
+            data-save-button="true"
+            className="flex-1 rounded-control bg-primary py-3 text-center font-medium text-primary-text transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
           >
             {isSaving ? "Saving..." : "Save Budget"}
           </button>

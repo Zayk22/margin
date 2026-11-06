@@ -5,6 +5,7 @@ import { useEffect } from "react";
 import { initializeSyncTriggers } from "@/sync/triggers";
 import { getDb } from "@/local/db";
 import { seedDefaultCategories } from "@/local/seed";
+import { getDeviceId } from "@/lib/device";
 
 function SyncInitializer() {
   const { userId, getToken, isSignedIn, isLoaded } = useAuth();
@@ -15,9 +16,7 @@ function SyncInitializer() {
     localStorage.setItem("margin-last-user-id", userId);
 
     const db = getDb(userId);
-    
-    // Seed runs asynchronously and catches its own errors
-    seedDefaultCategories(db);
+    seedDefaultCategories(db, getDeviceId());
 
     const config = {
       userId,

@@ -7,8 +7,10 @@ import { saveExpense } from "@/local/repositories";
 import { parseKobo, formatKobo } from "@/lib/money";
 import { toLocalDateString } from "@/lib/dates";
 import { DEFAULT_CATEGORIES } from "@/lib/categories";
+import { getDeviceId } from "@/lib/device";
 import { triggerDebouncedSync } from "@/sync/triggers";
 import { X, Delete } from "lucide-react";
+import { CategoryChip } from "@/components/shared/CategoryChip";
 
 export function AddExpenseSheet({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
   const { userId, getToken } = useAuth();
@@ -58,12 +60,10 @@ export function AddExpenseSheet({ isOpen, onClose }: { isOpen: boolean; onClose:
         createdAt: now,
         updatedAt: now,
         deletedAt: null,
-        deviceId: "browser",
+        deviceId: getDeviceId(),
       });
 
-      // Just call getToken directly, no if check needed.
       triggerDebouncedSync({ userId, getToken });
-
       onClose();
     } catch (err) {
       console.error("Failed to save expense", err);
@@ -89,10 +89,7 @@ export function AddExpenseSheet({ isOpen, onClose }: { isOpen: boolean; onClose:
             type="text"
             inputMode="numeric"
             value={amount}
-            onChange={(e) => {
-              const val = e.target.value.replace(/[^0-9]/g, "");
-              setAmount(val);
-            }}
+            onChange={(e) => setAmount(e.target.value.replace(/[^0-9]/g, ""))}
             className="absolute opacity-0 pointer-events-none"
             aria-label="Amount"
           />
@@ -109,7 +106,7 @@ export function AddExpenseSheet({ isOpen, onClose }: { isOpen: boolean; onClose:
                   : "border-border bg-surface text-text-muted"
               }`}
             >
-              <span className={`h-2 w-2 rounded-full bg-success`} />
+              <CategoryChip category={cat} size="sm" />
               {cat.name}
             </button>
           ))}

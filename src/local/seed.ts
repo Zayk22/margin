@@ -1,7 +1,7 @@
 import { MarginDatabase } from "./db";
 import { DEFAULT_CATEGORIES } from "../lib/categories";
 
-export async function seedDefaultCategories(db: MarginDatabase): Promise<void> {
+export async function seedDefaultCategories(db: MarginDatabase, deviceId: string): Promise<void> {
   try {
     await db.transaction("rw", db.categories, async () => {
       const existingCats = await db.categories.toArray();
@@ -11,7 +11,6 @@ export async function seedDefaultCategories(db: MarginDatabase): Promise<void> {
       for (const def of DEFAULT_CATEGORIES) {
         const existing = existingMap.get(def.id);
         if (existing) {
-          // Update only the specific fields for default categories, preserve user metadata
           await db.categories.put({
             ...existing,
             name: def.name,
@@ -20,13 +19,12 @@ export async function seedDefaultCategories(db: MarginDatabase): Promise<void> {
             isDefault: true,
           });
         } else {
-          // Insert new default category
           await db.categories.put({
             ...def,
             createdAt: now,
             updatedAt: now,
             deletedAt: null,
-            deviceId: "browser",
+            deviceId,
           });
         }
       }
