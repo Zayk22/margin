@@ -63,6 +63,7 @@ const pairs: Pair[] = [
   { theme: "dark", label: "success-strong on bg", fg: "#4CC9A0", bg: "#0F1110", required: 4.5 },
   { theme: "dark", label: "warn-strong on bg", fg: "#F2B544", bg: "#0F1110", required: 4.5 },
   { theme: "dark", label: "danger on bg", fg: "#F0705A", bg: "#0F1110", required: 4.5 },
+  { theme: "dark", label: "primary-text on danger", fg: "#0F1110", bg: "#F0705A", required: 4.5 }, // NEW
   
   { theme: "light", label: "text on bg", fg: "#151715", bg: "#F6F5F1", required: 4.5 },
   { theme: "light", label: "text-muted on bg", fg: "rgba(21, 23, 21, 0.62)", bg: "#F6F5F1", required: 4.5 },
@@ -73,6 +74,7 @@ const pairs: Pair[] = [
   { theme: "light", label: "success-strong on bg", fg: "#16795C", bg: "#F6F5F1", required: 4.5 },
   { theme: "light", label: "warn-strong on bg", fg: "#8A5A00", bg: "#F6F5F1", required: 4.5 },
   { theme: "light", label: "danger on bg", fg: "#C2412D", bg: "#F6F5F1", required: 4.5 },
+  { theme: "light", label: "primary-text on danger", fg: "#F6F5F1", bg: "#C2412D", required: 4.5 }, // NEW
 
   // Non-text pairs (3:1)
   { theme: "dark", label: "success fill on bg", fg: "#4CC9A0", bg: "#0F1110", required: 3.0 },

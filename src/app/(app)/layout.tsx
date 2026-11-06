@@ -7,6 +7,7 @@ import { useSyncExternalStore, useEffect, useState } from "react";
 import { syncStatusStore } from "@/sync/status";
 import { useActiveUser } from "@/hooks/useActiveUser";
 import { AddExpenseSheet } from "@/components/add-expense/AddExpenseSheet";
+import { Logo } from "@/components/brand/Logo";
 
 function SyncPill() {
   const status = useSyncExternalStore(
@@ -72,7 +73,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     <div className="flex min-h-screen flex-col md:flex-row bg-bg">
       <aside className="hidden w-64 flex-col border-r border-border bg-surface p-4 md:flex">
         <div className="mb-8 flex items-center justify-between">
-          <span className="font-heading text-xl font-bold">Margin</span>
+          <Logo />
           <SyncPill />
         </div>
         <nav className="flex flex-col gap-1" aria-label="Main navigation">
@@ -96,7 +97,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
       <div className="flex flex-1 flex-col">
         <div className="flex items-center justify-between border-b border-border bg-surface p-4 md:hidden">
-          <span className="font-heading text-lg font-bold">Margin</span>
+          <Logo />
           <SyncPill />
         </div>
         <main className="flex-1 pb-24 md:pb-0">

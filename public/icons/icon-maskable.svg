@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <rect width="64" height="64" fill="#0F1110" />
+  <g transform="translate(6.4, 6.4) scale(0.8)">
+    <path 
+      fill="#F2F1ED" 
+      fill-rule="evenodd" 
+      d="M16,0 h32 a16,16 0 0 1 16,16 v32 a16,16 0 0 1 -16,16 h-32 a16,16 0 0 1 -16,-16 v-32 a16,16 0 0 1 16,-16 z 
+         M20,16 v32 h4 V16 z 
+         M28,30 h16 v4 h-16 z" 
+    />
+  </g>
+</svg>
